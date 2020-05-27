@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using DiscordAssistant.Models;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
@@ -28,14 +29,31 @@ namespace DiscordAssistant
         public async Task MainAsync()
         {
             client.Log += _client_Log;
+            client.Ready += Client_Ready;
 
             client.MessageReceived += _client_MessageReceived;
 
             await client.LoginAsync(TokenType.Bot, config.DiscordToken);
             await client.StartAsync();
 
+
+            
             // Block this task until the program is closed.
             await Task.Delay(-1);
+
+        }
+
+        private async Task Client_Ready()
+        {
+            var jenkinsChannel = client.Guilds.SelectMany(g => g.Channels).FirstOrDefault(c => c.Name == "jenkins") as SocketTextChannel;
+            if (jenkinsChannel == null)
+            {
+                Console.WriteLine("Jenkins channel not found");
+            }
+            else
+            {
+                await jenkinsChannel.SendMessageAsync("Booted.");
+            }
         }
 
         private Task _client_Log(LogMessage arg)
@@ -62,11 +80,17 @@ namespace DiscordAssistant
             {
                 try
                 {
-                    var workflowJobs = await jenkinsRestClient.FetchWorkflowJobs();
-                    var lastRun = await jenkinsRestClient.FetchWorkflowRun(workflowJobs.builds.FirstOrDefault());
-                    await arg.Channel.SendMessageAsync($"{workflowJobs.displayName}, {lastRun.result}");
+                    var stringBuilder = new StringBuilder();
+                    stringBuilder.AppendLine("Showing latest job statuses:");
+                    var jenkins = await jenkinsRestClient.FetchWorkflows();
+                    var runs = await jenkinsRestClient.FetchAllWorkflowRuns(jenkins);
+                    foreach (var run in runs)
+                    {
+                        stringBuilder.AppendLine($"{run.fullDisplayName} - {run.result}");
+                    }
+                    await arg.Channel.SendMessageAsync(stringBuilder.ToString());
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     Console.WriteLine(ex);
                 }

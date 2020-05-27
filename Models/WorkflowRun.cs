@@ -4,9 +4,9 @@ using System.Text;
 
 namespace DiscordAssistant.Models
 {
-    public class WorkflowRun
+    public class WorkflowRun : JenkinsObject
     {
-        public string _class { get; set; }
+        public override string ClassName => "org.jenkinsci.plugins.workflow.job.WorkflowRun";
         public WorkflowRunAction[] actions { get; set; }
         public object[] artifacts { get; set; }
         public bool building { get; set; }
