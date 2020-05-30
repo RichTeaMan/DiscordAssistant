@@ -69,28 +69,17 @@ namespace DiscordAssistant
         public async Task<List<WorkflowRun>> FetchAllWorkflowRuns(JenkinsObject jenkinsObject)
         {
             List<WorkflowRun> runs = new List<WorkflowRun>();
+            List<Task<List<WorkflowRun>>> tasks = new List<Task<List<WorkflowRun>>>();
             switch (jenkinsObject)
             {
                 case Hudson h:
-                    foreach (var j in h.Jobs)
-                    {
-                        var r = await FetchAllWorkflowRuns(j);
-                        runs.AddRange(r);
-                    }
+                    tasks.AddRange(h.Jobs.Select(j => FetchAllWorkflowRuns(j)));
                     break;
                 case Folder f:
-                    foreach (var j in f.Jobs)
-                    {
-                        var r = await FetchAllWorkflowRuns(j);
-                        runs.AddRange(r);
-                    }
+                    tasks.AddRange(f.Jobs.Select(j => FetchAllWorkflowRuns(j)));
                     break;
                 case WorkflowJob wj:
-                    foreach (var j in wj.builds.Take(5))
-                    {
-                        var r = await FetchAllWorkflowRuns(j);
-                        runs.AddRange(r);
-                    }
+                    tasks.AddRange(wj.builds.Take(1).Select(j => FetchAllWorkflowRuns(j)));
                     break;
                 case WorkflowRun wr:
                     runs.Add(wr);
@@ -99,6 +88,9 @@ namespace DiscordAssistant
                     Console.WriteLine($"Unknown Jenkins object type: {jenkinsObject.GetType().FullName}.");
                     break;
             }
+
+            await Task.WhenAll(tasks);
+            runs.AddRange(tasks.SelectMany(t => t.Result));
 
             return runs;
         }
