@@ -33,6 +33,7 @@ namespace DiscordAssistant
             serviceCollection.AddSingleton<DiscordSocketClient>();
             serviceCollection.AddSingleton<JenkinsRestClient>();
             serviceCollection.AddSingleton<JenkinsDeserialiser>();
+            serviceCollection.AddSingleton<DataStore>();
 
             var serviceProvider = serviceCollection.BuildServiceProvider();
             return serviceProvider;

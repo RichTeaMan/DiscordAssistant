@@ -86,7 +86,7 @@ namespace DiscordAssistant
                     }
                     break;
                 case WorkflowJob wj:
-                    foreach (var j in wj.builds.Take(1))
+                    foreach (var j in wj.builds.Take(5))
                     {
                         var r = await FetchAllWorkflowRuns(j);
                         runs.AddRange(r);

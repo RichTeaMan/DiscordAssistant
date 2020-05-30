@@ -5,6 +5,7 @@ using DiscordAssistant.Models;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,11 +20,14 @@ namespace DiscordAssistant
 
         private readonly Config config;
 
-        public Assistant(DiscordSocketClient client, JenkinsRestClient jenkinsRestClient, Config config)
+        private readonly DataStore dataStore;
+
+        public Assistant(DiscordSocketClient client, JenkinsRestClient jenkinsRestClient, Config config, DataStore dataStore)
         {
             this.client = client ?? throw new ArgumentNullException(nameof(client));
             this.jenkinsRestClient = jenkinsRestClient ?? throw new ArgumentNullException(nameof(jenkinsRestClient));
             this.config = config ?? throw new ArgumentNullException(nameof(config));
+            this.dataStore = dataStore ?? throw new ArgumentNullException(nameof(dataStore));
         }
 
         public async Task MainAsync()
@@ -54,6 +58,16 @@ namespace DiscordAssistant
             {
                 await jenkinsChannel.SendMessageAsync("Booted.");
             }
+
+            Console.WriteLine("Getting runs...");
+            var jenkins = await jenkinsRestClient.FetchWorkflows();
+            var runs = await jenkinsRestClient.FetchAllWorkflowRuns(jenkins);
+            Console.WriteLine("Saving runs...");
+            foreach(var run in runs)
+            {
+                await dataStore.Save(run.url, run);
+            }
+            Console.WriteLine("Save complete...");
         }
 
         private Task _client_Log(LogMessage arg)
