@@ -23,7 +23,7 @@ namespace DiscordAssistant
 
         private readonly Config config;
 
-        public Assistant(ILogger<Assistant> logger, DiscordSocketClient client, JenkinsRestClient jenkinsRestClient, Config config, DataStore dataStore)
+        public Assistant(ILogger<Assistant> logger, DiscordSocketClient client, JenkinsRestClient jenkinsRestClient, Config config)
         {
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.client = client ?? throw new ArgumentNullException(nameof(client));

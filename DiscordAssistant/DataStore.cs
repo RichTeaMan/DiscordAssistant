@@ -1,8 +1,11 @@
 ﻿using DiscordAssistant.Models;
 using MyCouch;
+using MyCouch.Requests;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace DiscordAssistant
@@ -69,7 +72,26 @@ namespace DiscordAssistant
                 content = data;
             }
             return new LoadResponse(r.IsSuccess, content);
+        }
 
+        public async Task<IReadOnlyCollection<string>> Find(string key, string value)
+        {
+
+            string selector = $"{{ \"{key}\": \"{value}\" }}";
+
+            var findRequest = new FindRequest
+            {
+                SelectorExpression = selector
+            };
+            var findResponse = await couchClient.Queries.FindAsync(findRequest);
+            var jObjects = findResponse.Docs.Select(d =>
+            {
+                JObject o = JObject.Parse(d);
+                var jsonData = o.SelectToken("data");
+                var data = JsonConvert.SerializeObject(jsonData);
+                return data;
+            }).ToList().AsReadOnly();
+            return jObjects;
         }
 
         public void Dispose()

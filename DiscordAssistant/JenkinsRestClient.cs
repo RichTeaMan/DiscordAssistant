@@ -132,6 +132,13 @@ namespace DiscordAssistant
             return runs;
         }
 
+        public async Task<IReadOnlyCollection<WorkflowJob>> FetchCachedWorkflowJobs()
+        {
+            var jobJsons = await dataStore.Find("jenkinsDataType", "org.jenkinsci.plugins.workflow.job.WorkflowJob");
+            var jobs = jobJsons.Select(j => JsonConvert.DeserializeObject<WorkflowJob>(j)).ToArray();
+            return jobs;
+        }
+
         private HttpRequestMessage CreateJenkinsRequest(string url)
         {
             var request = new HttpRequestMessage(HttpMethod.Get, url);
