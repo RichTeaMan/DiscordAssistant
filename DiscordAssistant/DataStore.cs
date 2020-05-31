@@ -1,4 +1,5 @@
-﻿using MyCouch;
+﻿using DiscordAssistant.Models;
+using MyCouch;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -27,13 +28,31 @@ namespace DiscordAssistant
         {
             await setupCouchClient();
 
+            // check if an update is required
+            string revision = null;
+            var r = await couchClient.Documents.GetAsync(id);
+            if (r.IsSuccess)
+            {
+                revision = r.Rev;
+            }
+
+            string jenkinsDataType = "not-jenkins-object";
+            var jenkinsObject = data as JenkinsObject;
+            if (jenkinsObject != null)
+            {
+                jenkinsDataType = jenkinsObject.ClassName;
+            }
+
             Container container = new Container
             {
                 _id = id,
-                Data = data
+                _rev = revision,
+                Data = data,
+                JenkinsDataType = jenkinsDataType
             };
 
             await couchClient.Entities.PutAsync(container);
+
         }
 
         public async Task<LoadResponse> Load(string id)
@@ -74,7 +93,14 @@ namespace DiscordAssistant
         class Container
         {
             public string _id { get; set; }
+
+            public string _rev { get; set; }
+
             public object Data { get; set; }
+
+            public DateTimeOffset StorageDateTime { get; set; } = DateTimeOffset.UtcNow;
+
+            public string JenkinsDataType { get; set; }
         }
     }
 }

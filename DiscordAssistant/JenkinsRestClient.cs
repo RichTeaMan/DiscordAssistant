@@ -39,34 +39,22 @@ namespace DiscordAssistant
             return workflowJob;
         }
 
-        public async Task<JenkinsObject> FetchWorkflowJobs(Job job, bool useCache = true)
+        /// <summary>
+        /// Fetches the full object from an ApiLink object.
+        ///
+        /// Many representations in the Jenkins API will be a reference to an object. This
+        /// method will resolve that link and serialise into an appropriate form.
+        ///
+        /// Objects can be optionally retrieved from a cache. A newly acquired response
+        /// will always update the cache.
+        /// </summary>
+        /// <param name="apiLink"></param>
+        /// <param name="useCache"></param>
+        /// <returns></returns>
+        public async Task<JenkinsObject> FetchFullObject(ApiLink apiLink, bool useCache = true)
         {
             string json = null;
-            using var request = CreateJenkinsRequest($"{job.Url}api/json");
-            if (useCache)
-            {
-                var cacheResponse = await dataStore.Load(request.RequestUri.ToString());
-                if (cacheResponse.IsSuccess)
-                {
-                    json = cacheResponse.Content;
-                }
-            }
-
-            if (json == null)
-            {
-                using var response = await httpClient.SendAsync(request);
-                response.EnsureSuccessStatusCode();
-                json = await response.Content.ReadAsStringAsync();
-                await dataStore.Save(request.RequestUri.ToString(), jenkinsDeserialiser.Deserialise(json));
-            }
-
-            return jenkinsDeserialiser.Deserialise(json);
-        }
-
-        public async Task<JenkinsObject> FetchWorkflowRun(Build build, bool useCache = true)
-        {
-            string json = null;
-            using var request = CreateJenkinsRequest($"{build.Url}api/json");
+            using var request = CreateJenkinsRequest($"{apiLink.Url}api/json");
             if (useCache)
             {
                 var cacheResponse = await dataStore.Load(request.RequestUri.ToString());
@@ -126,17 +114,10 @@ namespace DiscordAssistant
             List<WorkflowRun> runs = new List<WorkflowRun>();
             switch (apiLink)
             {
-                case Job j:
+                case ApiLink link:
                     {
-                        var job = await FetchWorkflowJobs(j);
-                        var r = await FetchAllWorkflowRuns(job);
-                        runs.AddRange(r);
-                    }
-                    break;
-                case Build b:
-                    {
-                        var run = await FetchWorkflowRun(b);
-                        var r = await FetchAllWorkflowRuns(run);
+                        var jenkinsObject = await FetchFullObject(link);
+                        var r = await FetchAllWorkflowRuns(jenkinsObject);
                         runs.AddRange(r);
                     }
                     break;
