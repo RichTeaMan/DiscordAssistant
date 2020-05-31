@@ -1,7 +1,11 @@
 ﻿using Discord.WebSocket;
+using DiscordAssistant.Jobs;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Quartz;
+using Quartz.Impl;
+using Quartz.Spi;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -34,6 +38,12 @@ namespace DiscordAssistant
             serviceCollection.AddSingleton<JenkinsRestClient>();
             serviceCollection.AddSingleton<JenkinsDeserialiser>();
             serviceCollection.AddSingleton<DataStore>();
+            serviceCollection.AddSingleton<StateStore>();
+
+            // Add Quartz services
+            serviceCollection.AddSingleton<IJobFactory, SingletonJobFactory>();
+            serviceCollection.AddSingleton<ISchedulerFactory, StdSchedulerFactory>();
+            serviceCollection.AddSingleton<WorkflowRunUpdateJob>();
 
             var serviceProvider = serviceCollection.BuildServiceProvider();
             return serviceProvider;

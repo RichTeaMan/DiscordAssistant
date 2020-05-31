@@ -1,9 +1,13 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using DiscordAssistant.Jobs;
 using DiscordAssistant.Models;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Quartz;
+using Quartz.Spi;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -17,15 +21,24 @@ namespace DiscordAssistant
     {
         private readonly ILogger logger;
 
+        private readonly IServiceProvider serviceProvider;
+
         private readonly DiscordSocketClient client;
 
         private readonly JenkinsRestClient jenkinsRestClient;
 
         private readonly Config config;
+        private IScheduler TaskScheduler;
 
-        public Assistant(ILogger<Assistant> logger, DiscordSocketClient client, JenkinsRestClient jenkinsRestClient, Config config)
+        public Assistant(
+            ILogger<Assistant> logger,
+            IServiceProvider serviceProvider,
+            DiscordSocketClient client,
+            JenkinsRestClient jenkinsRestClient,
+            Config config)
         {
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            this.serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
             this.client = client ?? throw new ArgumentNullException(nameof(client));
             this.jenkinsRestClient = jenkinsRestClient ?? throw new ArgumentNullException(nameof(jenkinsRestClient));
             this.config = config ?? throw new ArgumentNullException(nameof(config));
@@ -41,11 +54,12 @@ namespace DiscordAssistant
             await client.LoginAsync(TokenType.Bot, config.DiscordToken);
             await client.StartAsync();
 
+            var schedulerFactory = serviceProvider.GetRequiredService<ISchedulerFactory>();
+            TaskScheduler = await schedulerFactory.GetScheduler();
+            TaskScheduler.JobFactory = serviceProvider.GetRequiredService<IJobFactory>();
 
-            
             // Block this task until the program is closed.
             await Task.Delay(-1);
-
         }
 
         private async Task Client_Ready()
@@ -64,6 +78,26 @@ namespace DiscordAssistant
             var jenkins = await jenkinsRestClient.FetchWorkflows();
             var runs = await jenkinsRestClient.FetchAllWorkflowRuns(jenkins);
             logger.LogInformation("Save complete...");
+
+
+            // define the jobs
+            // var workflowRunUpdateJob = serviceProvider.GetRequiredService<WorkflowRunUpdateJob>();
+            IJobDetail job = JobBuilder.Create<WorkflowRunUpdateJob>()
+                .WithIdentity("myJob", "group1")
+                .Build();
+
+            // Trigger the job to run now, and then every 40 seconds
+            ITrigger workflowRunUpdateTrigger = TriggerBuilder.Create()
+                .WithIdentity("myTrigger", "group1")
+                .StartNow()
+                .WithSimpleSchedule(x => x
+                    .WithIntervalInSeconds(3)
+                    .RepeatForever())
+            .Build();
+
+            var res = await TaskScheduler.ScheduleJob(job, workflowRunUpdateTrigger);
+            await TaskScheduler.Start();
+            Console.WriteLine(res);
         }
 
         private Task _client_Log(LogMessage arg)
