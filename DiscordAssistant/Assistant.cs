@@ -80,14 +80,10 @@ namespace DiscordAssistant
             logger.LogInformation("Save complete...");
 
 
-            // define the jobs
             IJobDetail job = JobBuilder.Create<WorkflowRunUpdateJob>()
-                .WithIdentity("myJob", "group1")
                 .Build();
 
-            // Trigger the job to run now, and then every 40 seconds
             ITrigger workflowRunUpdateTrigger = TriggerBuilder.Create()
-                .WithIdentity("myTrigger", "group1")
                 .StartNow()
                 .WithSimpleSchedule(x => x
                     .WithIntervalInSeconds(120)
