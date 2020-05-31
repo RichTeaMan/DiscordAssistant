@@ -27,10 +27,13 @@ namespace DiscordAssistant
             string jenkinsUsername = config.GetValue<string>("jenkins:username");
             string jenkinsKey = config.GetValue<string>("jenkins:key");
             string discordToken = config.GetValue<string>("discord:token");
+            string couchDbUrl = config.GetValue<string>("db:url") ?? "http://localhost:5985";
+            string couchDbUsername = config.GetValue<string>("db:username") ?? "admin";
+            string couchDbPassword = config.GetValue<string>("db:password") ?? "password";
 
             serviceCollection.AddTransient(sp =>
             {
-                return new Config(jenkinsUsername, jenkinsKey, discordToken);
+                return new Config(jenkinsUsername, jenkinsKey, discordToken, couchDbUrl, couchDbUsername, couchDbPassword);
             });
 
             serviceCollection.AddLogging(configure => { configure.AddConfiguration(config.GetSection("Logging")); configure.AddConsole(); });

@@ -8,7 +8,8 @@ namespace DiscordAssistant
     {
         public static async Task Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+            Console.WriteLine("Discord Assistant");
+
             var serviceProvider = ServiceProviderFactory.CreateServiceProvider();
 
             var assistant = serviceProvider.GetRequiredService<Assistant>();

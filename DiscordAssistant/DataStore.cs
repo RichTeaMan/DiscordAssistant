@@ -6,12 +6,20 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace DiscordAssistant
 {
     public class DataStore : IDisposable
     {
+        private readonly Config config;
+
+        public DataStore(Config config)
+        {
+            this.config = config ?? throw new ArgumentNullException(nameof(config));
+        }
+
         private MyCouchClient couchClient = null;
 
         private async Task setupCouchClient()
@@ -20,9 +28,9 @@ namespace DiscordAssistant
             {
                 return;
             }
-            DbConnectionInfo dbConnectionInfo = new DbConnectionInfo("http://localhost:5985", "discord-assistant-store")
+            DbConnectionInfo dbConnectionInfo = new DbConnectionInfo(config.CouchDbUrl, "discord-assistant-store")
             {
-                BasicAuth = new MyCouch.Net.BasicAuthString("admin", "password")
+                BasicAuth = new MyCouch.Net.BasicAuthString(config.CouchDbUsername, config.CouchDbPassword)
             };
             couchClient = new MyCouchClient(dbConnectionInfo);
             await couchClient.Database.PutAsync();
