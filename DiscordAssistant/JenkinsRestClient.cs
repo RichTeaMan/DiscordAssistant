@@ -1,4 +1,5 @@
 ﻿using DiscordAssistant.Models;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -11,6 +12,8 @@ namespace DiscordAssistant
 {
     public class JenkinsRestClient : IDisposable
     {
+        private readonly ILogger logger;
+
         private readonly HttpClient httpClient = new HttpClient();
 
         private readonly Config config;
@@ -19,8 +22,9 @@ namespace DiscordAssistant
 
         private readonly DataStore dataStore;
 
-        public JenkinsRestClient(Config config, JenkinsDeserialiser jenkinsDeserialiser, DataStore dataStore)
+        public JenkinsRestClient(ILogger<JenkinsRestClient> logger, Config config, JenkinsDeserialiser jenkinsDeserialiser, DataStore dataStore)
         {
+            this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.config = config ?? throw new ArgumentNullException(nameof(config));
             this.jenkinsDeserialiser = jenkinsDeserialiser ?? throw new ArgumentNullException(nameof(jenkinsDeserialiser));
             this.dataStore = dataStore ?? throw new ArgumentNullException(nameof(dataStore));
@@ -99,7 +103,7 @@ namespace DiscordAssistant
                     runs.Add(wr);
                     break;
                 default:
-                    Console.WriteLine($"Unknown Jenkins object type: {jenkinsObject.GetType().FullName}.");
+                    logger.LogWarning($"Unknown Jenkins object type: {jenkinsObject.GetType().FullName}.");
                     break;
             }
 
@@ -122,7 +126,7 @@ namespace DiscordAssistant
                     }
                     break;
                 default:
-                    Console.WriteLine($"Unknown API link type: {apiLink.GetType().FullName}.");
+                    logger.LogWarning($"Unknown API link type: {apiLink.GetType().FullName}.");
                     break;
             }
             return runs;

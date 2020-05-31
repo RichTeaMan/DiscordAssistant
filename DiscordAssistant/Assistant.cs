@@ -3,6 +3,7 @@ using Discord.Commands;
 using Discord.WebSocket;
 using DiscordAssistant.Models;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -14,20 +15,20 @@ namespace DiscordAssistant
 {
     public class Assistant
     {
+        private readonly ILogger logger;
+
         private readonly DiscordSocketClient client;
 
         private readonly JenkinsRestClient jenkinsRestClient;
 
         private readonly Config config;
 
-        private readonly DataStore dataStore;
-
-        public Assistant(DiscordSocketClient client, JenkinsRestClient jenkinsRestClient, Config config, DataStore dataStore)
+        public Assistant(ILogger<Assistant> logger, DiscordSocketClient client, JenkinsRestClient jenkinsRestClient, Config config, DataStore dataStore)
         {
+            this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.client = client ?? throw new ArgumentNullException(nameof(client));
             this.jenkinsRestClient = jenkinsRestClient ?? throw new ArgumentNullException(nameof(jenkinsRestClient));
             this.config = config ?? throw new ArgumentNullException(nameof(config));
-            this.dataStore = dataStore ?? throw new ArgumentNullException(nameof(dataStore));
         }
 
         public async Task MainAsync()
@@ -52,17 +53,17 @@ namespace DiscordAssistant
             var jenkinsChannel = client.Guilds.SelectMany(g => g.Channels).FirstOrDefault(c => c.Name == "jenkins") as SocketTextChannel;
             if (jenkinsChannel == null)
             {
-                Console.WriteLine("Jenkins channel not found");
+                logger.LogWarning("Jenkins channel not found");
             }
             else
             {
                 await jenkinsChannel.SendMessageAsync("Booted.");
             }
 
-            Console.WriteLine("Getting runs...");
+            logger.LogInformation("Getting runs...");
             var jenkins = await jenkinsRestClient.FetchWorkflows();
             var runs = await jenkinsRestClient.FetchAllWorkflowRuns(jenkins);
-            Console.WriteLine("Save complete...");
+            logger.LogInformation("Save complete...");
         }
 
         private Task _client_Log(LogMessage arg)
@@ -101,7 +102,7 @@ namespace DiscordAssistant
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine(ex);
+                    logger.LogWarning(ex, "Exception during status message.");
                 }
             }
             else
