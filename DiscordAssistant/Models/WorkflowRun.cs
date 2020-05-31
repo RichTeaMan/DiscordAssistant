@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -21,7 +22,10 @@ namespace DiscordAssistant.Models
         public int number { get; set; }
         public int queueId { get; set; }
         public string result { get; set; }
-        public long timestamp { get; set; }
+
+        [JsonProperty("timestamp")]
+        [JsonConverter(typeof(UnixEpochMillisecondJsonConverter))]
+        public DateTimeOffset Timestamp { get; set; }
         public string url { get; set; }
         public object[] changeSets { get; set; }
         public object[] culprits { get; set; }
