@@ -81,7 +81,6 @@ namespace DiscordAssistant
 
 
             // define the jobs
-            // var workflowRunUpdateJob = serviceProvider.GetRequiredService<WorkflowRunUpdateJob>();
             IJobDetail job = JobBuilder.Create<WorkflowRunUpdateJob>()
                 .WithIdentity("myJob", "group1")
                 .Build();
@@ -91,7 +90,7 @@ namespace DiscordAssistant
                 .WithIdentity("myTrigger", "group1")
                 .StartNow()
                 .WithSimpleSchedule(x => x
-                    .WithIntervalInSeconds(3)
+                    .WithIntervalInSeconds(120)
                     .RepeatForever())
             .Build();
 

@@ -4,7 +4,7 @@ using System.Text;
 
 namespace DiscordAssistant.Models
 {
-    public class WorkflowJob : JenkinsObject
+    public class WorkflowJob : JenkinsObject, ApiLink
     {
         public override string ClassName => "org.jenkinsci.plugins.workflow.job.WorkflowJob";
 
@@ -15,7 +15,7 @@ namespace DiscordAssistant.Models
         public string fullDisplayName { get; set; }
         public string fullName { get; set; }
         public string name { get; set; }
-        public string url { get; set; }
+        public string Url { get; set; }
         public bool buildable { get; set; }
         public Build[] builds { get; set; }
         public string color { get; set; }
@@ -95,6 +95,8 @@ namespace DiscordAssistant.Models
     {
         public string _class { get; set; }
         public int number { get; set; }
+
+        public string Url { get; set; }
     }
 
     public class Healthreport

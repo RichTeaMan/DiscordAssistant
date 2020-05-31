@@ -2,7 +2,7 @@
 
 namespace DiscordAssistant.Models
 {
-    public class ApiLink
+    public interface ApiLink
     {
         [JsonProperty("url")]
         public string Url { get; set; }

@@ -54,6 +54,8 @@ namespace DiscordAssistant.Models
     {
         public string _class { get; set; }
         public string name { get; set; }
+
+        public string Url { get; set; }
     }
 
     public class View
