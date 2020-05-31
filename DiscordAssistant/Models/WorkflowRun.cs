@@ -13,7 +13,10 @@ namespace DiscordAssistant.Models
         public bool building { get; set; }
         public object description { get; set; }
         public string displayName { get; set; }
-        public int duration { get; set; }
+
+        [JsonProperty("duration")]
+        [JsonConverter(typeof(DurationMillisecondJsonConverter))]
+        public TimeSpan Duration { get; set; }
         public int estimatedDuration { get; set; }
         public object executor { get; set; }
         public string fullDisplayName { get; set; }

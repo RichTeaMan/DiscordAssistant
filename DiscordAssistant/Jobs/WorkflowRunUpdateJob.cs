@@ -52,7 +52,7 @@ namespace DiscordAssistant.Jobs
             await Task.WhenAll(runTasks);
             var runs = runTasks.Select(t => t.Result).Cast<WorkflowRun>().ToArray();
 
-            var newRuns = runs.Where(r => r.Timestamp > state.LastUpdateDateTime).ToArray();
+            var newRuns = runs.Where(r => r.Timestamp + r.Duration > state.LastUpdateDateTime && r.result != null).ToArray();
 
             var jenkinsChannel = client.Guilds.SelectMany(g => g.Channels).FirstOrDefault(c => c.Name == "jenkins") as SocketTextChannel;
             foreach(var newRun in newRuns)

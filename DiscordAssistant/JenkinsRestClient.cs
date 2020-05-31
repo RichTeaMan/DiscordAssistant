@@ -73,7 +73,15 @@ namespace DiscordAssistant
                 using var response = await httpClient.SendAsync(request);
                 response.EnsureSuccessStatusCode();
                 json = await response.Content.ReadAsStringAsync();
-                await dataStore.Save(request.RequestUri.ToString(), jenkinsDeserialiser.Deserialise(json));
+                var jenkinsObject = jenkinsDeserialiser.Deserialise(json);
+                bool shouldCache = true;
+                if (jenkinsObject is WorkflowRun wr)
+                {
+                    shouldCache = wr.result != null;
+                }
+                if (shouldCache) {
+                    await dataStore.Save(request.RequestUri.ToString(), jenkinsObject);
+                }
             }
 
             return jenkinsDeserialiser.Deserialise(json);
