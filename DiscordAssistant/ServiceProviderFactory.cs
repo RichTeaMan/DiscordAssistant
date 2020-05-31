@@ -19,8 +19,9 @@ namespace DiscordAssistant
             var serviceCollection = new ServiceCollection();
 
             var builder = new ConfigurationBuilder()
+                    .AddUserSecrets("857fc796-f1e6-4f51-a86b-a0f1172872e3")
                     .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
-                    .AddUserSecrets("857fc796-f1e6-4f51-a86b-a0f1172872e3");
+                    .AddEnvironmentVariables();
             var config = builder.Build();
 
             string jenkinsUsername = config.GetValue<string>("jenkins:username");
