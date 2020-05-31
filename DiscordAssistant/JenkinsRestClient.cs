@@ -17,10 +17,13 @@ namespace DiscordAssistant
 
         private readonly JenkinsDeserialiser jenkinsDeserialiser;
 
-        public JenkinsRestClient(Config config, JenkinsDeserialiser jenkinsDeserialiser)
+        private readonly DataStore dataStore;
+
+        public JenkinsRestClient(Config config, JenkinsDeserialiser jenkinsDeserialiser, DataStore dataStore)
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
             this.jenkinsDeserialiser = jenkinsDeserialiser ?? throw new ArgumentNullException(nameof(jenkinsDeserialiser));
+            this.dataStore = dataStore ?? throw new ArgumentNullException(nameof(dataStore));
         }
 
         public async Task<Hudson> FetchWorkflows()
@@ -36,27 +39,50 @@ namespace DiscordAssistant
             return workflowJob;
         }
 
-        public async Task<JenkinsObject> FetchWorkflowJobs(Job job)
+        public async Task<JenkinsObject> FetchWorkflowJobs(Job job, bool useCache = true)
         {
+            string json = null;
             using var request = CreateJenkinsRequest($"{job.Url}api/json");
-            using var response = await httpClient.SendAsync(request);
+            if (useCache)
+            {
+                var cacheResponse = await dataStore.Load(request.RequestUri.ToString());
+                if (cacheResponse.IsSuccess)
+                {
+                    json = cacheResponse.Content;
+                }
+            }
 
-            response.EnsureSuccessStatusCode();
-
-            string json = await response.Content.ReadAsStringAsync();
+            if (json == null)
+            {
+                using var response = await httpClient.SendAsync(request);
+                response.EnsureSuccessStatusCode();
+                json = await response.Content.ReadAsStringAsync();
+                await dataStore.Save(request.RequestUri.ToString(), jenkinsDeserialiser.Deserialise(json));
+            }
 
             return jenkinsDeserialiser.Deserialise(json);
         }
 
-        public async Task<JenkinsObject> FetchWorkflowRun(Build build)
+        public async Task<JenkinsObject> FetchWorkflowRun(Build build, bool useCache = true)
         {
-            string url = $"{build.Url}api/json";
-            using var request = CreateJenkinsRequest(url);
-            using var response = await httpClient.SendAsync(request);
+            string json = null;
+            using var request = CreateJenkinsRequest($"{build.Url}api/json");
+            if (useCache)
+            {
+                var cacheResponse = await dataStore.Load(request.RequestUri.ToString());
+                if (cacheResponse.IsSuccess)
+                {
+                    json = cacheResponse.Content;
+                }
+            }
 
-            response.EnsureSuccessStatusCode();
-
-            string json = await response.Content.ReadAsStringAsync();
+            if (json == null)
+            {
+                using var response = await httpClient.SendAsync(request);
+                response.EnsureSuccessStatusCode();
+                json = await response.Content.ReadAsStringAsync();
+                await dataStore.Save(request.RequestUri.ToString(), jenkinsDeserialiser.Deserialise(json));
+            }
 
             return jenkinsDeserialiser.Deserialise(json);
         }

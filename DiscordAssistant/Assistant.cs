@@ -62,11 +62,6 @@ namespace DiscordAssistant
             Console.WriteLine("Getting runs...");
             var jenkins = await jenkinsRestClient.FetchWorkflows();
             var runs = await jenkinsRestClient.FetchAllWorkflowRuns(jenkins);
-            Console.WriteLine("Saving runs...");
-            foreach(var run in runs)
-            {
-                await dataStore.Save(run.url, run);
-            }
             Console.WriteLine("Save complete...");
         }
 
