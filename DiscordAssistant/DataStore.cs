@@ -17,7 +17,7 @@ namespace DiscordAssistant
             {
                 return;
             }
-            DbConnectionInfo dbConnectionInfo = new DbConnectionInfo("http://localhost:5985", "jenkins-cache")
+            DbConnectionInfo dbConnectionInfo = new DbConnectionInfo("http://localhost:5985", "discord-assistant-store")
             {
                 BasicAuth = new MyCouch.Net.BasicAuthString("admin", "password")
             };
@@ -45,8 +45,8 @@ namespace DiscordAssistant
 
             Container container = new Container
             {
-                _id = id,
-                _rev = revision,
+                Id = id,
+                Rev = revision,
                 Data = data,
                 JenkinsDataType = jenkinsDataType
             };
@@ -92,9 +92,11 @@ namespace DiscordAssistant
 
         class Container
         {
-            public string _id { get; set; }
+            [JsonProperty("_id")]
+            public string Id { get; set; }
 
-            public string _rev { get; set; }
+            [JsonProperty("_rev")]
+            public string Rev { get; set; }
 
             public object Data { get; set; }
 
