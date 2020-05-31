@@ -57,13 +57,13 @@ namespace DiscordAssistant.Jobs
             var jenkinsChannel = client.Guilds.SelectMany(g => g.Channels).FirstOrDefault(c => c.Name == "jenkins") as SocketTextChannel;
             foreach(var newRun in newRuns)
             {
-                await jenkinsChannel.SendMessageAsync($"{newRun.fullDisplayName} - {newRun.number}: {newRun.result}");
+                await jenkinsChannel.SendMessageAsync($"[{newRun.Timestamp}]{newRun.fullDisplayName}: {newRun.result}");
             }
             state.LastUpdateDateTime = DateTimeOffset.Now;
             await stateStore.SaveState(state);
 
             stopwatch.Stop();
-            logger.LogInformation($"Updating Jenkins jobs complete ({stopwatch.Elapsed.TotalSeconds}).");
+            logger.LogInformation($"Updating Jenkins jobs complete ({stopwatch.Elapsed.TotalSeconds} seconds).");
         }
     }
 }
