@@ -74,12 +74,19 @@ namespace DiscordAssistant
                 await jenkinsChannel.SendMessageAsync("Booted.");
             }
 
-            logger.LogInformation("Getting runs...");
-            var jenkins = await jenkinsRestClient.FetchWorkflows();
-            var runs = await jenkinsRestClient.FetchAllWorkflowRuns(jenkins);
-            logger.LogInformation("Save complete...");
+            try
+            {
+                logger.LogInformation("Getting runs...");
+                var jenkins = await jenkinsRestClient.FetchWorkflows();
+                var runs = await jenkinsRestClient.FetchAllWorkflowRuns(jenkins);
+                logger.LogInformation("Save complete...");
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error getting Jenkins data.");
+            }
 
-
+            logger.LogInformation("Starting up jobs.");
             IJobDetail job = JobBuilder.Create<WorkflowRunUpdateJob>()
                 .Build();
 
@@ -92,7 +99,7 @@ namespace DiscordAssistant
 
             var res = await TaskScheduler.ScheduleJob(job, workflowRunUpdateTrigger);
             await TaskScheduler.Start();
-            Console.WriteLine(res);
+            logger.LogInformation("Starting up jobs complete.");
         }
 
         private Task _client_Log(LogMessage arg)
