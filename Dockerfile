@@ -6,17 +6,13 @@ ADD . /DiscordAssistant
 WORKDIR /DiscordAssistant
 RUN dotnet publish --configuration Release
 
-FROM mcr.microsoft.com/dotnet/core/aspnet:3.1-alpine3.11
+FROM mcr.microsoft.com/dotnet/core/aspnet:3.1
 
 # Install cultures (same approach as Alpine SDK image)
-RUN apk add --no-cache icu-libs
+RUN apt-get update && apt-get install -y tzdata
 
 # Disable the invariant mode (set in base image)
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
-
-ENV jenkins:username=
-ENV jenkins:key=
-ENV discord:token=
 
 COPY --from=builder /DiscordAssistant/DiscordAssistant/bin/Release/netcoreapp3.1/publish/ /DiscordAssistant/
 WORKDIR /DiscordAssistant
