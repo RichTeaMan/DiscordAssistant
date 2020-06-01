@@ -55,9 +55,11 @@ namespace DiscordAssistant.Jobs
             var newRuns = runs.Where(r => r.Timestamp + r.Duration > state.LastUpdateDateTime && r.result != null).ToArray();
 
             var jenkinsChannel = client.Guilds.SelectMany(g => g.Channels).FirstOrDefault(c => c.Name == "jenkins") as SocketTextChannel;
-            foreach(var newRun in newRuns)
+            var BritishZone = TimeZoneInfo.FindSystemTimeZoneById("GMT Standard Time");
+            foreach (var newRun in newRuns)
             {
-                await jenkinsChannel.SendMessageAsync($"[{newRun.Timestamp}]{newRun.fullDisplayName}: {newRun.result}");
+                var britishDateTime = TimeZoneInfo.ConvertTime(newRun.Timestamp.UtcDateTime, TimeZoneInfo.Utc, BritishZone);
+                await jenkinsChannel.SendMessageAsync($"[{britishDateTime}] {newRun.fullDisplayName}: {newRun.result}");
             }
             state.LastUpdateDateTime = DateTimeOffset.Now;
             await stateStore.SaveState(state);
