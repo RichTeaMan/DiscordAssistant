@@ -1,4 +1,5 @@
-﻿using Discord.WebSocket;
+﻿using Discord;
+using Discord.WebSocket;
 using DiscordAssistant.Models;
 using Microsoft.Extensions.Logging;
 using Quartz;
@@ -52,14 +53,39 @@ namespace DiscordAssistant.Jobs
             await Task.WhenAll(runTasks);
             var runs = runTasks.Select(t => t.Result).Cast<WorkflowRun>().ToArray();
 
-            var newRuns = runs.Where(r => r.Timestamp + r.Duration > state.LastUpdateDateTime && r.result != null).ToArray();
+            var newRuns = runs.Where(r => r.Timestamp + r.Duration > state.LastUpdateDateTime && r.Result != null).GroupBy(r => r.url).First().ToArray();
 
             var jenkinsChannel = client.Guilds.SelectMany(g => g.Channels).FirstOrDefault(c => c.Name == "jenkins") as SocketTextChannel;
             var BritishZone = TimeZoneInfo.FindSystemTimeZoneById("GMT Standard Time");
             foreach (var newRun in newRuns)
             {
+                string passEmoji = $"[{newRun.Result}]";
+                if (newRun.Result == "SUCCESS")
+                {
+                    passEmoji = ":white_check_mark:";
+                }
+                else if (newRun.Result == "FAILURE")
+                {
+                    passEmoji = ":octagonal_sign:";
+                }
+                else if (newRun.Result == "ABORTED")
+                {
+                    passEmoji = ":no_pedestrians:";
+                }
+                else if (newRun.Result == "UNSTABLE")
+                {
+                    passEmoji = ":warning:";
+                }
+
                 var britishDateTime = TimeZoneInfo.ConvertTime(newRun.Timestamp.UtcDateTime, TimeZoneInfo.Utc, BritishZone);
-                await jenkinsChannel.SendMessageAsync($"[{britishDateTime}] {newRun.fullDisplayName}: {newRun.result}");
+                string timestampStr = britishDateTime.ToLongTimeString();
+                var embed = new EmbedBuilder
+                {
+                    // Embed property can be set within object initializer
+                    Title = newRun.fullDisplayName,
+                    Url = newRun.url
+                };
+                await jenkinsChannel.SendMessageAsync($"{passEmoji} [{timestampStr}] {newRun.fullDisplayName}", false, embed.Build());
             }
             state.LastUpdateDateTime = DateTimeOffset.Now;
             await stateStore.SaveState(state);

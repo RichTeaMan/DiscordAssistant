@@ -24,7 +24,19 @@ namespace DiscordAssistant.Models
         public bool keepLog { get; set; }
         public int number { get; set; }
         public int queueId { get; set; }
-        public string result { get; set; }
+
+        /// <summary>
+        /// Indicates result of the run. Null if the run is still in progress.
+        ///
+        /// Expected values:
+        /// ABORTED
+        /// FAILURE
+        /// NOT_BUILT
+        /// SUCCESS
+        /// UNSTABLE
+        /// </summary>
+        [JsonProperty("result")]
+        public string Result { get; set; }
 
         [JsonProperty("timestamp")]
         [JsonConverter(typeof(UnixEpochMillisecondJsonConverter))]

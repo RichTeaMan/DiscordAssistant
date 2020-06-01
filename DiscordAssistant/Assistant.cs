@@ -125,7 +125,7 @@ namespace DiscordAssistant
                     var runs = await jenkinsRestClient.FetchAllWorkflowRuns(jenkins);
                     foreach (var run in runs)
                     {
-                        stringBuilder.AppendLine($"{run.fullDisplayName} - {run.result}");
+                        stringBuilder.AppendLine($"{run.fullDisplayName} - {run.Result}");
                     }
                     await arg.Channel.SendMessageAsync(stringBuilder.ToString());
                 }

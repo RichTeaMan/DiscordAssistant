@@ -77,7 +77,7 @@ namespace DiscordAssistant
                 bool shouldCache = true;
                 if (jenkinsObject is WorkflowRun wr)
                 {
-                    shouldCache = wr.result != null;
+                    shouldCache = wr.Result != null;
                 }
                 if (shouldCache) {
                     await dataStore.Save(request.RequestUri.ToString(), jenkinsObject);
