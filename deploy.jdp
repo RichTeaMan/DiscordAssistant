@@ -15,7 +15,7 @@ pipeline {
                     string(credentialsId: 'jenkins-api-key', variable: 'jenkinsApiKey'),
                     string(credentialsId: 'discord-assistant-discord-key', variable: 'discordKey')]) {
 
-                    sh "sudo docker run -d -e jenkins__username=tom -e jenkins__key=${jenkinsApiKey} -e discord__token=${discordKey} -e db__url=http://tomserver:5985 -e db__username=admin -e db__password=${couchDbPassword} --name discord-assistant discord-assistant"
+                    sh "sudo docker run -d -e jenkins__username=tom -e jenkins__key=${jenkinsApiKey} -e discord__token=${discordKey} -e db__url=http://tomserver:5985 -e db__username=admin -e db__password=${couchDbPassword} --name discord-assistant --restart unless-stopped discord-assistant"
                 }
             }
         }
