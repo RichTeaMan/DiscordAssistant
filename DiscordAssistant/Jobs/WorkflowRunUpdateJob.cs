@@ -55,7 +55,7 @@ namespace DiscordAssistant.Jobs
 
                 var runTasks = buildLinks.Select(bl => jenkinsRestClient.FetchFullObject(bl)).ToArray();
                 await Task.WhenAll(runTasks);
-                var runs = runTasks.Select(t => t.Result).Cast<WorkflowRun>().ToArray();
+                var runs = runTasks.Select(t => t.Result).Cast<WorkflowRun>().Where(r => r != null).ToArray();
 
                 var newRuns = runs.Where(r => r.Timestamp + r.Duration > state.LastUpdateDateTime && r.Result != null)
                     .GroupBy(r => r.url.Trim()).FirstOrDefault()
@@ -73,12 +73,6 @@ namespace DiscordAssistant.Jobs
                     zones.FirstOrDefault(tz => tz.Id == "GMT Standard Time") ??
                     TimeZoneInfo.Utc;
 
-                // GMT Standard Time
-                logger.LogInformation("zones:");
-                foreach(var tz in TimeZoneInfo.GetSystemTimeZones())
-                {
-                    logger.LogInformation($"{tz.Id} - {tz.DisplayName}");
-                }
                 logger.LogInformation($"Using timezone {timezoneInfo.Id}");
                 foreach (var newRun in newRuns)
                 {

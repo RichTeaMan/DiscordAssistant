@@ -89,7 +89,8 @@ namespace DiscordAssistant
 
             var findRequest = new FindRequest
             {
-                SelectorExpression = selector
+                SelectorExpression = selector,
+                Limit = 250
             };
             var findResponse = await couchClient.Queries.FindAsync(findRequest);
             var jObjects = findResponse.Docs.Select(d =>

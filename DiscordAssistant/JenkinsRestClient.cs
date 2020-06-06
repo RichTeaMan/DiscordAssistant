@@ -61,10 +61,17 @@ namespace DiscordAssistant
             using var request = CreateJenkinsRequest($"{apiLink.Url}api/json");
             if (useCache)
             {
-                var cacheResponse = await dataStore.Load(request.RequestUri.ToString());
-                if (cacheResponse.IsSuccess)
+                try
                 {
-                    json = cacheResponse.Content;
+                    var cacheResponse = await dataStore.Load(request.RequestUri.ToString());
+                    if (cacheResponse.IsSuccess)
+                    {
+                        json = cacheResponse.Content;
+                    }
+                }
+                catch(HttpRequestException ex)
+                {
+                    logger.LogError(ex, "Could not contact CouchDB. Is it switched on with correct credentials?");
                 }
             }
 
