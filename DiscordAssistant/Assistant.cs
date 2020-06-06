@@ -30,6 +30,8 @@ namespace DiscordAssistant
         private readonly Config config;
         private IScheduler TaskScheduler;
 
+        private bool booted = false;
+
         public Assistant(
             ILogger<Assistant> logger,
             IServiceProvider serviceProvider,
@@ -71,7 +73,15 @@ namespace DiscordAssistant
             }
             else
             {
-                await jenkinsChannel.SendMessageAsync("Booted.");
+                if (booted)
+                {
+                    await jenkinsChannel.SendMessageAsync("Reconnected.");
+                }
+                else
+                {
+                    await jenkinsChannel.SendMessageAsync("Booted.");
+                    booted = true;
+                }
             }
 
             try
