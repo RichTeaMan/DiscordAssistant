@@ -118,8 +118,7 @@ namespace DiscordAssistant
                     runs.Add(wr);
                     break;
                 default:
-                    logger.LogWarning($"Unknown Jenkins object type: {jenkinsObject.GetType().FullName}.");
-                    logger.LogDebug(JsonConvert.SerializeObject(jenkinsObject, Formatting.Indented));
+                    logger.LogWarning($"Unknown Jenkins object type: {jenkinsObject.GetType().FullName}:\n{JsonConvert.SerializeObject(jenkinsObject, Formatting.Indented)}");
                     break;
             }
 
