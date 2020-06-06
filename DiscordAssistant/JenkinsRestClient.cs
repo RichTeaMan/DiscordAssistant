@@ -119,6 +119,7 @@ namespace DiscordAssistant
                     break;
                 default:
                     logger.LogWarning($"Unknown Jenkins object type: {jenkinsObject.GetType().FullName}.");
+                    logger.LogDebug(JsonConvert.SerializeObject(jenkinsObject, Formatting.Indented));
                     break;
             }
 
