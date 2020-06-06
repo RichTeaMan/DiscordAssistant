@@ -55,10 +55,14 @@ namespace DiscordAssistant.Jobs
                 await Task.WhenAll(runTasks);
                 var runs = runTasks.Select(t => t.Result).Cast<WorkflowRun>().ToArray();
 
-                var newRuns = runs.Where(r => r.Timestamp + r.Duration > state.LastUpdateDateTime && r.Result != null).GroupBy(r => r.url).First().ToArray();
+                var newRuns = runs.Where(r => r.Timestamp + r.Duration > state.LastUpdateDateTime && r.Result != null)
+                    .GroupBy(r => r.url.Trim()).FirstOrDefault()
+                    .Where(r => r != null)
+                    .ToArray();
+
+                logger.LogInformation($"{newRuns} new runs found:\n{string.Join(",\n", newRuns.Select(r => r.url).ToArray())}");
 
                 var jenkinsChannel = client.Guilds.SelectMany(g => g.Channels).FirstOrDefault(c => c.Name == "jenkins") as SocketTextChannel;
-
 
                 // getting timezones is not platform agnostic, so try both ways
                 TimeZoneInfo timezoneInfo = TimeZoneInfo.Utc;
