@@ -47,8 +47,10 @@ namespace DiscordAssistant.Jobs
 
                 var jobs = await jenkinsRestClient.FetchCachedWorkflowJobs();
                 var updatedJobTasks = jobs.Select(j => jenkinsRestClient.FetchFullObject(j, false)).ToArray();
+
                 await Task.WhenAll(updatedJobTasks);
                 var updatedJobs = updatedJobTasks.Select(t => t.Result).Cast<WorkflowJob>().ToArray();
+                logger.LogInformation($"{updatedJobs.Length} jobs found:\n{string.Join(",\n", updatedJobs.Select(r => r.Url).ToArray())}");
                 var buildLinks = updatedJobs.SelectMany(j => j.builds).ToArray();
 
                 var runTasks = buildLinks.Select(bl => jenkinsRestClient.FetchFullObject(bl)).ToArray();
@@ -60,7 +62,7 @@ namespace DiscordAssistant.Jobs
                     .Where(r => r != null)
                     .ToArray();
 
-                logger.LogInformation($"{newRuns} new runs found:\n{string.Join(",\n", newRuns.Select(r => r.url).ToArray())}");
+                logger.LogInformation($"{newRuns.Length} new runs found:\n{string.Join(",\n", newRuns.Select(r => r.url).ToArray())}");
 
                 var jenkinsChannel = client.Guilds.SelectMany(g => g.Channels).FirstOrDefault(c => c.Name == "jenkins") as SocketTextChannel;
 
@@ -98,6 +100,10 @@ namespace DiscordAssistant.Jobs
                         passEmoji = ":warning:";
                     }
 
+                    string durationStr = $"Job ran for {(newRun.Duration.Hours > 0 ? $"{newRun.Duration.Hours} hours, " : "")}" +
+                        $"{(newRun.Duration.Minutes > 0 ? $"{newRun.Duration.Minutes} minutes, " : "")}" +
+                        $"{(newRun.Duration.Seconds > 0 ? $"{newRun.Duration.Seconds} seconds." : "")}";
+
                     var localisedDateTime = TimeZoneInfo.ConvertTime(newRun.Timestamp.UtcDateTime, TimeZoneInfo.Utc, timezoneInfo);
                     string timestampStr = localisedDateTime.ToLongTimeString();
                     var embed = new EmbedBuilder
@@ -106,7 +112,7 @@ namespace DiscordAssistant.Jobs
                         Title = newRun.fullDisplayName,
                         Url = newRun.url
                     };
-                    await jenkinsChannel.SendMessageAsync($"{passEmoji} [{timestampStr}] {newRun.fullDisplayName}", false, embed.Build());
+                    await jenkinsChannel.SendMessageAsync($"{passEmoji} [{timestampStr}] {newRun.fullDisplayName}. {durationStr}", false, embed.Build());
                 }
                 state.LastUpdateDateTime = DateTimeOffset.Now;
                 await stateStore.SaveState(state);
