@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -79,7 +80,7 @@ namespace DiscordAssistant
                 }
                 else
                 {
-                    await jenkinsChannel.SendMessageAsync("Booted.");
+                    await jenkinsChannel.SendMessageAsync($"Booted. Version {Program.VersionNumber}");
                     booted = true;
                 }
             }
