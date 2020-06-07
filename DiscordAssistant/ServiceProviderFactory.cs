@@ -46,6 +46,7 @@ namespace DiscordAssistant
             serviceCollection.AddSingleton<IJobFactory, SingletonJobFactory>();
             serviceCollection.AddSingleton<ISchedulerFactory, StdSchedulerFactory>();
             serviceCollection.AddSingleton<WorkflowRunUpdateJob>();
+            serviceCollection.AddSingleton<WorkflowUpdateJob>();
 
             var serviceProvider = serviceCollection.BuildServiceProvider();
             return serviceProvider;

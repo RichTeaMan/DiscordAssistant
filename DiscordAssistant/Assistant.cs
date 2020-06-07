@@ -85,22 +85,9 @@ namespace DiscordAssistant
                 }
             }
 
-            try
-            {
-                logger.LogInformation("Getting runs...");
-                var jenkins = await jenkinsRestClient.FetchWorkflows();
-                var runs = await jenkinsRestClient.FetchAllWorkflowRuns(jenkins);
-                logger.LogInformation("Save complete...");
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Error getting Jenkins data.");
-            }
-
             logger.LogInformation("Starting up jobs.");
-            IJobDetail job = JobBuilder.Create<WorkflowRunUpdateJob>()
+            IJobDetail workflowRunUpdateJob = JobBuilder.Create<WorkflowRunUpdateJob>()
                 .Build();
-
             ITrigger workflowRunUpdateTrigger = TriggerBuilder.Create()
                 .StartNow()
                 .WithSimpleSchedule(x => x
@@ -108,7 +95,17 @@ namespace DiscordAssistant
                     .RepeatForever())
             .Build();
 
-            var res = await TaskScheduler.ScheduleJob(job, workflowRunUpdateTrigger);
+            IJobDetail workflowUpdateJob = JobBuilder.Create<WorkflowRunUpdateJob>()
+                .Build();
+            ITrigger workflowUpdateTrigger = TriggerBuilder.Create()
+                .StartNow()
+                .WithSimpleSchedule(x => x
+                    .WithIntervalInHours(2)
+                    .RepeatForever())
+            .Build();
+
+            await TaskScheduler.ScheduleJob(workflowRunUpdateJob, workflowRunUpdateTrigger);
+            await TaskScheduler.ScheduleJob(workflowUpdateJob, workflowUpdateTrigger);
             await TaskScheduler.Start();
             logger.LogInformation("Starting up jobs complete.");
         }
