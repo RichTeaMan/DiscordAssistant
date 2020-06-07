@@ -4,17 +4,15 @@ using DiscordAssistant.Models;
 using Microsoft.Extensions.Logging;
 using Quartz;
 using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace DiscordAssistant.Jobs
 {
     [DisallowConcurrentExecution]
-    public class WorkflowRunUpdateJob : IJob
+    public class WorkflowRunUpdateJob : IJob, IDisposable
     {
         private readonly ILogger logger;
 
@@ -23,6 +21,9 @@ namespace DiscordAssistant.Jobs
         private readonly JenkinsRestClient jenkinsRestClient;
 
         private readonly DiscordSocketClient client;
+
+        // disallow concurrent excecution doesn't seem to work...
+        private readonly SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1);
 
         public WorkflowRunUpdateJob(ILogger<WorkflowRunUpdateJob> logger,
             StateStore stateStore,
@@ -41,6 +42,12 @@ namespace DiscordAssistant.Jobs
             stopwatch.Start();
             logger.LogInformation("Updating Jenkins jobs.");
 
+            bool lockTaken = await semaphoreSlim.WaitAsync(0);
+            if (!lockTaken)
+            {
+                logger.LogInformation("Update job already in progress, aborting update.");
+                return;
+            }
             try
             {
                 var state = await stateStore.FetchState();
@@ -58,8 +65,6 @@ namespace DiscordAssistant.Jobs
                 var runs = runTasks.Select(t => t.Result).Select(r => r as WorkflowRun).Where(r => r != null).ToArray();
 
                 var newRuns = runs.Where(r => r.Timestamp + r.Duration > state.LastUpdateDateTime && r.Result != null)
-                    .GroupBy(r => r.url.Trim()).FirstOrDefault()
-                    .Where(r => r != null)
                     .ToArray();
 
                 logger.LogInformation($"{newRuns.Length} new runs found:\n{string.Join(",\n", newRuns.Select(r => r.url).ToArray())}");
@@ -118,8 +123,17 @@ namespace DiscordAssistant.Jobs
             finally
             {
                 stopwatch.Stop();
+                if (lockTaken)
+                {
+                    semaphoreSlim.Release();
+                }
                 logger.LogInformation($"Updating Jenkins jobs complete ({stopwatch.Elapsed.TotalSeconds} seconds).");
             }
+        }
+
+        public void Dispose()
+        {
+            semaphoreSlim?.Dispose();
         }
     }
 }
