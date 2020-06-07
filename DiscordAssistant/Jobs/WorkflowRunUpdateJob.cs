@@ -55,7 +55,7 @@ namespace DiscordAssistant.Jobs
 
                 var runTasks = buildLinks.Select(bl => jenkinsRestClient.FetchFullObject(bl)).ToArray();
                 await Task.WhenAll(runTasks);
-                var runs = runTasks.Select(t => t.Result).Cast<WorkflowRun>().Where(r => r != null).ToArray();
+                var runs = runTasks.Select(t => t.Result).Select(r => r as WorkflowRun).Where(r => r != null).ToArray();
 
                 var newRuns = runs.Where(r => r.Timestamp + r.Duration > state.LastUpdateDateTime && r.Result != null)
                     .GroupBy(r => r.url.Trim()).FirstOrDefault()
