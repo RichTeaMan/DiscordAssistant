@@ -49,8 +49,8 @@ namespace DiscordAssistant
 
         public async Task MainAsync()
         {
-            client.Log += _client_Log;
-            client.Ready += Client_Ready;
+            client.Log += clientLog;
+            client.Ready += clientReady;
 
             client.MessageReceived += _client_MessageReceived;
 
@@ -65,7 +65,7 @@ namespace DiscordAssistant
             await Task.Delay(-1);
         }
 
-        private async Task Client_Ready()
+        private async Task clientReady()
         {
             var jenkinsChannel = client.Guilds.SelectMany(g => g.Channels).FirstOrDefault(c => c.Name == "jenkins") as SocketTextChannel;
             if (jenkinsChannel == null)
@@ -110,12 +110,33 @@ namespace DiscordAssistant
             logger.LogInformation("Starting up jobs complete.");
         }
 
-        private Task _client_Log(LogMessage arg)
+        private Task clientLog(LogMessage arg)
         {
-            Console.WriteLine(arg.Message);
+            LogLevel logLevel = LogLevel.Information;
+            switch (arg.Severity)
+            {
+                case LogSeverity.Critical:
+                    logLevel = LogLevel.Critical;
+                    break;
+                case LogSeverity.Error:
+                    logLevel = LogLevel.Error;
+                    break;
+                case LogSeverity.Warning:
+                    logLevel = LogLevel.Warning;
+                    break;
+                case LogSeverity.Info:
+                    logLevel = LogLevel.Information;
+                    break;
+                case LogSeverity.Verbose:
+                    logLevel = LogLevel.Trace;
+                    break;
+                case LogSeverity.Debug:
+                    logLevel = LogLevel.Debug;
+                    break;
+            }
+            logger.Log(logLevel, arg.Exception, arg.Message);
             return Task.CompletedTask;
         }
-
         private async Task _client_MessageReceived(SocketMessage arg)
         {
             // ensures we don't process system/other bot messages
