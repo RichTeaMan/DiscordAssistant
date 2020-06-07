@@ -76,7 +76,7 @@ namespace DiscordAssistant
             {
                 if (booted)
                 {
-                    await jenkinsChannel.SendMessageAsync("Reconnected.");
+                    logger.LogInformation("Reconnected.");
                 }
                 else
                 {
