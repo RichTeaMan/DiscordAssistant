@@ -42,6 +42,12 @@ namespace DiscordAssistant.Jobs
             stopwatch.Start();
             logger.LogInformation("Updating Jenkins jobs.");
 
+            var jenkinsChannel = client.Guilds.SelectMany(g => g.Channels).FirstOrDefault(c => c.Name == "jenkins") as SocketTextChannel;
+            if (jenkinsChannel == null)
+            {
+                logger.LogWarning("Cannot find Jenkins channel.");
+            }
+
             bool lockTaken = await semaphoreSlim.WaitAsync(0);
             if (!lockTaken)
             {
@@ -56,6 +62,7 @@ namespace DiscordAssistant.Jobs
                 var updatedJobTasks = jobs.Select(j => jenkinsRestClient.FetchFullObject(j, false)).ToArray();
 
                 await Task.WhenAll(updatedJobTasks);
+
                 var updatedJobs = updatedJobTasks.Select(t => t.Result).Cast<WorkflowJob>().ToArray();
                 logger.LogInformation($"{updatedJobs.Length} jobs found:\n{string.Join(",\n", updatedJobs.Select(r => r.Url).ToArray())}");
                 var buildLinks = updatedJobs.SelectMany(j => j.builds).ToArray();
@@ -68,8 +75,6 @@ namespace DiscordAssistant.Jobs
                     .ToArray();
 
                 logger.LogInformation($"{newRuns.Length} new runs found:\n{string.Join(",\n", newRuns.Select(r => r.url).ToArray())}");
-
-                var jenkinsChannel = client.Guilds.SelectMany(g => g.Channels).FirstOrDefault(c => c.Name == "jenkins") as SocketTextChannel;
 
                 // getting timezones is not platform agnostic, so try both ways
                 TimeZoneInfo timezoneInfo = TimeZoneInfo.Utc;
@@ -111,7 +116,7 @@ namespace DiscordAssistant.Jobs
                         Title = newRun.fullDisplayName,
                         Url = newRun.url
                     };
-                    await jenkinsChannel.SendMessageAsync($"{passEmoji} [{timestampStr}] {newRun.fullDisplayName}. {durationStr}", false, embed.Build());
+                    await jenkinsChannel?.SendMessageAsync($"{passEmoji} [{timestampStr}] {newRun.fullDisplayName}. {durationStr}", false, embed.Build());
                 }
                 state.LastUpdateDateTime = DateTimeOffset.Now;
                 await stateStore.SaveState(state);
@@ -119,6 +124,7 @@ namespace DiscordAssistant.Jobs
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error getting Jenkins job status.");
+                await jenkinsChannel?.SendMessageAsync($":loudspeaker: Error getting Jenkins job status: {ex.GetType().Name} - {ex.Message}");
             }
             finally
             {

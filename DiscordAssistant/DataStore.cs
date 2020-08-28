@@ -37,70 +37,90 @@ namespace DiscordAssistant
         }
         public async Task Save(string id, object data)
         {
-            await setupCouchClient();
-
-            // check if an update is required
-            string revision = null;
-            var r = await couchClient.Documents.GetAsync(id);
-            if (r.IsSuccess)
+            try
             {
-                revision = r.Rev;
+                await setupCouchClient();
+
+                // check if an update is required
+                string revision = null;
+                var r = await couchClient.Documents.GetAsync(id);
+                if (r.IsSuccess)
+                {
+                    revision = r.Rev;
+                }
+
+                string jenkinsDataType = "not-jenkins-object";
+                var jenkinsObject = data as JenkinsObject;
+                if (jenkinsObject != null)
+                {
+                    jenkinsDataType = jenkinsObject.ClassName;
+                }
+
+                Container container = new Container
+                {
+                    Id = id,
+                    Rev = revision,
+                    Data = data,
+                    JenkinsDataType = jenkinsDataType
+                };
+
+                await couchClient.Entities.PutAsync(container);
             }
-
-            string jenkinsDataType = "not-jenkins-object";
-            var jenkinsObject = data as JenkinsObject;
-            if (jenkinsObject != null)
+            catch (Exception ex)
             {
-                jenkinsDataType = jenkinsObject.ClassName;
+                throw new ApplicationException($"Could not put data into CouchDB. {ex.Message}", ex);
             }
-
-            Container container = new Container
-            {
-                Id = id,
-                Rev = revision,
-                Data = data,
-                JenkinsDataType = jenkinsDataType
-            };
-
-            await couchClient.Entities.PutAsync(container);
-
         }
 
         public async Task<LoadResponse> Load(string id)
         {
-            await setupCouchClient();
-
-            var r = await couchClient.Documents.GetAsync(id);
-            string content = null;
-            if (r.IsSuccess)
+            try
             {
-                JObject o = JObject.Parse(r.Content);
-                var jsonData = o.SelectToken("data");
-                var data = JsonConvert.SerializeObject(jsonData);
-                content = data;
+                await setupCouchClient();
+
+                var r = await couchClient.Documents.GetAsync(id);
+                string content = null;
+                if (r.IsSuccess)
+                {
+                    JObject o = JObject.Parse(r.Content);
+                    var jsonData = o.SelectToken("data");
+                    var data = JsonConvert.SerializeObject(jsonData);
+                    content = data;
+                }
+                return new LoadResponse(r.IsSuccess, content);
             }
-            return new LoadResponse(r.IsSuccess, content);
+            catch (Exception ex)
+            {
+                throw new ApplicationException($"Could not fetch data from CouchDB. {ex.Message}", ex);
+            }
         }
 
         public async Task<IReadOnlyCollection<string>> Find(string key, string value)
         {
-
-            string selector = $"{{ \"{key}\": \"{value}\" }}";
-
-            var findRequest = new FindRequest
+            try
             {
-                SelectorExpression = selector,
-                Limit = 250
-            };
-            var findResponse = await couchClient.Queries.FindAsync(findRequest);
-            var jObjects = findResponse.Docs.Select(d =>
+                string selector = $"{{ \"{key}\": \"{value}\" }}";
+
+                var findRequest = new FindRequest
+                {
+                    SelectorExpression = selector,
+                    Limit = 250
+                };
+                var findResponse = await couchClient.Queries.FindAsync(findRequest);
+                var jObjects = findResponse.Docs.Select(d =>
+                {
+                    JObject o = JObject.Parse(d);
+                    var jsonData = o.SelectToken("data");
+                    var data = JsonConvert.SerializeObject(jsonData);
+                    return data;
+                }).ToList().AsReadOnly();
+                return jObjects;
+
+            }
+            catch (Exception ex)
             {
-                JObject o = JObject.Parse(d);
-                var jsonData = o.SelectToken("data");
-                var data = JsonConvert.SerializeObject(jsonData);
-                return data;
-            }).ToList().AsReadOnly();
-            return jObjects;
+                throw new ApplicationException($"Could not fetch data from CouchDB. {ex.Message}", ex);
+            }
         }
 
         public void Dispose()

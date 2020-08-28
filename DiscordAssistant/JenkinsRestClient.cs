@@ -69,7 +69,7 @@ namespace DiscordAssistant
                         json = cacheResponse.Content;
                     }
                 }
-                catch(HttpRequestException ex)
+                catch (HttpRequestException ex)
                 {
                     logger.LogError(ex, "Could not contact CouchDB. Is it switched on with correct credentials?");
                 }
@@ -86,7 +86,8 @@ namespace DiscordAssistant
                 {
                     shouldCache = wr.Result != null;
                 }
-                if (shouldCache) {
+                if (shouldCache)
+                {
                     await dataStore.Save(request.RequestUri.ToString(), jenkinsObject);
                 }
             }
