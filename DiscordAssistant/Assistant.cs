@@ -80,7 +80,7 @@ namespace DiscordAssistant
                 }
                 else
                 {
-                    await jenkinsChannel.SendMessageAsync($"Booted. Version {Program.VersionNumber}");
+                    await jenkinsChannel.SendMessageAsync($":sun_with_face: Booted. Version {Program.VersionNumber}");
                     booted = true;
                 }
             }
