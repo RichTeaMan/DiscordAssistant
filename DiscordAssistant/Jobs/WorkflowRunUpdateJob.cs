@@ -121,6 +121,16 @@ namespace DiscordAssistant.Jobs
                 state.LastUpdateDateTime = DateTimeOffset.Now;
                 await stateStore.SaveState(state);
             }
+            catch (TaskCanceledException ex)
+            {
+                logger.LogError(ex, "Task cancelled exception getting Jenkins job status.");
+                await jenkinsChannel?.SendMessageAsync($":loudspeaker: Task cancelled exception:\n  Error getting Jenkins job status: {ex?.InnerException?.GetType()?.Name} - {ex?.InnerException?.Message}");
+            }
+            catch (OperationCanceledException ex)
+            {
+                logger.LogError(ex, "Operation cancelled exception getting Jenkins job status.");
+                await jenkinsChannel?.SendMessageAsync($":loudspeaker: Operation cancelled exception:\n  Error getting Jenkins job status: {ex?.InnerException?.GetType()?.Name} - {ex?.InnerException?.Message}");
+            }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error getting Jenkins job status.");
