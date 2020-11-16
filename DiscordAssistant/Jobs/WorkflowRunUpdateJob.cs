@@ -6,6 +6,7 @@ using Quartz;
 using System;
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -124,12 +125,14 @@ namespace DiscordAssistant.Jobs
             catch (TaskCanceledException ex)
             {
                 logger.LogError(ex, "Task cancelled exception getting Jenkins job status.");
-                await jenkinsChannel?.SendMessageAsync($":loudspeaker: Task cancelled exception:\n  Error getting Jenkins job status: {ex?.InnerException?.GetType()?.Name} - {ex?.InnerException?.Message}");
+                var innerExMessage = PrintInnerExceptions(ex.InnerException);
+                await jenkinsChannel?.SendMessageAsync($":loudspeaker: Task cancelled exception. Error getting Jenkins job status:\n{innerExMessage}");
             }
             catch (OperationCanceledException ex)
             {
                 logger.LogError(ex, "Operation cancelled exception getting Jenkins job status.");
-                await jenkinsChannel?.SendMessageAsync($":loudspeaker: Operation cancelled exception:\n  Error getting Jenkins job status: {ex?.InnerException?.GetType()?.Name} - {ex?.InnerException?.Message}");
+                var innerExMessage = PrintInnerExceptions(ex.InnerException);
+                await jenkinsChannel?.SendMessageAsync($":loudspeaker: Operation cancelled exception. Error getting Jenkins job status:\n{innerExMessage}");
             }
             catch (Exception ex)
             {
@@ -145,6 +148,17 @@ namespace DiscordAssistant.Jobs
                 }
                 logger.LogInformation($"Updating Jenkins jobs complete ({stopwatch.Elapsed.TotalSeconds} seconds).");
             }
+        }
+
+        private string PrintInnerExceptions(Exception innerException)
+        {
+            StringBuilder sb = new StringBuilder();
+            while (innerException != null)
+            {
+                sb.Append($"    {innerException?.GetType()?.Name} - {innerException?.Message}\n");
+                innerException = innerException?.InnerException;
+            }
+            return sb.ToString();
         }
 
         public void Dispose()
