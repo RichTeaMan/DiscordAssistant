@@ -1,4 +1,5 @@
 ﻿using DiscordAssistant.Models;
+using Microsoft.Extensions.Logging;
 using MyCouch;
 using MyCouch.Requests;
 using MyCouch.Responses;
@@ -16,12 +17,15 @@ namespace DiscordAssistant
     {
         private readonly Config config;
 
-        public DataStore(Config config)
-        {
-            this.config = config ?? throw new ArgumentNullException(nameof(config));
-        }
+        private readonly ILogger logger;
 
         private MyCouchClient couchClient = null;
+
+        public DataStore(Config config, ILogger<DataStore> logger)
+        {
+            this.config = config ?? throw new ArgumentNullException(nameof(config));
+            this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }
 
         private async Task setupCouchClient()
         {
@@ -137,6 +141,10 @@ namespace DiscordAssistant
                 catch (Exception ex)
                 {
                     prevException = ex;
+                    logger.LogWarning($"Error contacting CouchDB.\n{ex}");
+
+                    // wait before next attempt.
+                    await Task.Delay(30 * 1000);
                 }
             }
             throw prevException;
