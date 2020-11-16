@@ -1,6 +1,7 @@
 ﻿using DiscordAssistant.Models;
 using MyCouch;
 using MyCouch.Requests;
+using MyCouch.Responses;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -33,7 +34,7 @@ namespace DiscordAssistant
                 BasicAuth = new MyCouch.Net.BasicAuthString(config.CouchDbUsername, config.CouchDbPassword)
             };
             couchClient = new MyCouchClient(dbConnectionInfo);
-            await couchClient.Database.PutAsync();
+            await Retry(async () => await couchClient.Database.PutAsync());
         }
         public async Task Save(string id, object data)
         {
@@ -43,7 +44,7 @@ namespace DiscordAssistant
 
                 // check if an update is required
                 string revision = null;
-                var r = await couchClient.Documents.GetAsync(id);
+                var r = await Retry(async () => await couchClient.Documents.GetAsync(id));
                 if (r.IsSuccess)
                 {
                     revision = r.Rev;
@@ -64,7 +65,7 @@ namespace DiscordAssistant
                     JenkinsDataType = jenkinsDataType
                 };
 
-                await couchClient.Entities.PutAsync(container);
+                await Retry(async () => await couchClient.Entities.PutAsync(container));
             }
             catch (Exception ex)
             {
@@ -78,7 +79,7 @@ namespace DiscordAssistant
             {
                 await setupCouchClient();
 
-                var r = await couchClient.Documents.GetAsync(id);
+                var r = await Retry(async () => await couchClient.Documents.GetAsync(id));
                 string content = null;
                 if (r.IsSuccess)
                 {
@@ -106,7 +107,7 @@ namespace DiscordAssistant
                     SelectorExpression = selector,
                     Limit = 250
                 };
-                var findResponse = await couchClient.Queries.FindAsync(findRequest);
+                var findResponse = await Retry(async () => await couchClient.Queries.FindAsync(findRequest));
                 var jObjects = findResponse.Docs.Select(d =>
                 {
                     JObject o = JObject.Parse(d);
@@ -121,6 +122,24 @@ namespace DiscordAssistant
             {
                 throw new ApplicationException($"Could not fetch data from CouchDB. {ex.Message}", ex);
             }
+        }
+
+        private async Task<T> Retry<T>(Func<Task<T>> func)
+        {
+            int maxAttempts = 10;
+            Exception prevException = null;
+            foreach (var i in Enumerable.Range(0, maxAttempts))
+            {
+                try
+                {
+                    return await func();
+                }
+                catch (Exception ex)
+                {
+                    prevException = ex;
+                }
+            }
+            throw prevException;
         }
 
         public void Dispose()
