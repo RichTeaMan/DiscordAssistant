@@ -22,12 +22,19 @@ namespace DiscordAssistant
 
         private readonly DataStore dataStore;
 
-        public JenkinsRestClient(ILogger<JenkinsRestClient> logger, Config config, JenkinsDeserialiser jenkinsDeserialiser, DataStore dataStore)
+        private readonly LambdaRetry lambdaRetry;
+
+        public JenkinsRestClient(ILogger<JenkinsRestClient> logger,
+            Config config,
+            JenkinsDeserialiser jenkinsDeserialiser,
+            DataStore dataStore,
+            LambdaRetry lambdaRetry)
         {
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.config = config ?? throw new ArgumentNullException(nameof(config));
             this.jenkinsDeserialiser = jenkinsDeserialiser ?? throw new ArgumentNullException(nameof(jenkinsDeserialiser));
             this.dataStore = dataStore ?? throw new ArgumentNullException(nameof(dataStore));
+            this.lambdaRetry = lambdaRetry ?? throw new ArgumentNullException(nameof(lambdaRetry));
         }
 
         public async Task<Hudson> FetchWorkflows()
@@ -63,7 +70,7 @@ namespace DiscordAssistant
             {
                 try
                 {
-                    var cacheResponse = await dataStore.Load(request.RequestUri.ToString());
+                    var cacheResponse = await lambdaRetry.Retry(async () => await dataStore.Load(request.RequestUri.ToString()));
                     if (cacheResponse.IsSuccess)
                     {
                         json = cacheResponse.Content;
@@ -77,7 +84,7 @@ namespace DiscordAssistant
 
             if (json == null)
             {
-                using var response = await httpClient.SendAsync(request);
+                using var response = await lambdaRetry.Retry(async () => await httpClient.SendAsync(request));
                 response.EnsureSuccessStatusCode();
                 json = await response.Content.ReadAsStringAsync();
                 var jenkinsObject = jenkinsDeserialiser.Deserialise(json);

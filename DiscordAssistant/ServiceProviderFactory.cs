@@ -41,6 +41,7 @@ namespace DiscordAssistant
             serviceCollection.AddSingleton<JenkinsDeserialiser>();
             serviceCollection.AddSingleton<DataStore>();
             serviceCollection.AddSingleton<StateStore>();
+            serviceCollection.AddSingleton<LambdaRetry>();
 
             // Add Quartz services
             serviceCollection.AddSingleton<IJobFactory, SingletonJobFactory>();

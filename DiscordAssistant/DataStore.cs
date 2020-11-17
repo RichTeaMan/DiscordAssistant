@@ -2,13 +2,11 @@
 using Microsoft.Extensions.Logging;
 using MyCouch;
 using MyCouch.Requests;
-using MyCouch.Responses;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace DiscordAssistant
@@ -19,12 +17,15 @@ namespace DiscordAssistant
 
         private readonly ILogger logger;
 
+        private readonly LambdaRetry lambdaRetry;
+
         private MyCouchClient couchClient = null;
 
-        public DataStore(Config config, ILogger<DataStore> logger)
+        public DataStore(Config config, ILogger<DataStore> logger, LambdaRetry lambdaRetry)
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            this.lambdaRetry = lambdaRetry ?? throw new ArgumentNullException(nameof(lambdaRetry));
         }
 
         private async Task setupCouchClient()
@@ -38,7 +39,7 @@ namespace DiscordAssistant
                 BasicAuth = new MyCouch.Net.BasicAuthString(config.CouchDbUsername, config.CouchDbPassword)
             };
             couchClient = new MyCouchClient(dbConnectionInfo);
-            await Retry(async () => await couchClient.Database.PutAsync());
+            await lambdaRetry.Retry(async () => await couchClient.Database.PutAsync());
         }
         public async Task Save(string id, object data)
         {
@@ -48,7 +49,7 @@ namespace DiscordAssistant
 
                 // check if an update is required
                 string revision = null;
-                var r = await Retry(async () => await couchClient.Documents.GetAsync(id));
+                var r = await lambdaRetry.Retry(async () => await couchClient.Documents.GetAsync(id));
                 if (r.IsSuccess)
                 {
                     revision = r.Rev;
@@ -69,7 +70,7 @@ namespace DiscordAssistant
                     JenkinsDataType = jenkinsDataType
                 };
 
-                await Retry(async () => await couchClient.Entities.PutAsync(container));
+                await lambdaRetry.Retry(async () => await couchClient.Entities.PutAsync(container));
             }
             catch (Exception ex)
             {
@@ -83,7 +84,7 @@ namespace DiscordAssistant
             {
                 await setupCouchClient();
 
-                var r = await Retry(async () => await couchClient.Documents.GetAsync(id));
+                var r = await lambdaRetry.Retry(async () => await couchClient.Documents.GetAsync(id));
                 string content = null;
                 if (r.IsSuccess)
                 {
@@ -111,7 +112,7 @@ namespace DiscordAssistant
                     SelectorExpression = selector,
                     Limit = 250
                 };
-                var findResponse = await Retry(async () => await couchClient.Queries.FindAsync(findRequest));
+                var findResponse = await lambdaRetry.Retry(async () => await couchClient.Queries.FindAsync(findRequest));
                 var jObjects = findResponse.Docs.Select(d =>
                 {
                     JObject o = JObject.Parse(d);
@@ -126,28 +127,6 @@ namespace DiscordAssistant
             {
                 throw new ApplicationException($"Could not fetch data from CouchDB. {ex.Message}", ex);
             }
-        }
-
-        private async Task<T> Retry<T>(Func<Task<T>> func)
-        {
-            int maxAttempts = 10;
-            Exception prevException = null;
-            foreach (var i in Enumerable.Range(0, maxAttempts))
-            {
-                try
-                {
-                    return await func();
-                }
-                catch (Exception ex)
-                {
-                    prevException = ex;
-                    logger.LogWarning($"Error contacting CouchDB.\n{ex}");
-
-                    // wait before next attempt.
-                    await Task.Delay(30 * 1000);
-                }
-            }
-            throw prevException;
         }
 
         public void Dispose()
