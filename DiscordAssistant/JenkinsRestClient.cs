@@ -65,12 +65,12 @@ namespace DiscordAssistant
         public async Task<JenkinsObject> FetchFullObject(ApiLink apiLink, bool useCache = true)
         {
             string json = null;
-            using var request = CreateJenkinsRequest($"{apiLink.Url}api/json");
+            var uri = new Uri($"{apiLink.Url}api/json");
             if (useCache)
             {
                 try
                 {
-                    var cacheResponse = await lambdaRetry.Retry(async () => await dataStore.Load(request.RequestUri.ToString()));
+                    var cacheResponse = await lambdaRetry.Retry(async () => await dataStore.Load(uri.ToString()));
                     if (cacheResponse.IsSuccess)
                     {
                         json = cacheResponse.Content;
@@ -84,7 +84,11 @@ namespace DiscordAssistant
 
             if (json == null)
             {
-                using var response = await lambdaRetry.Retry(async () => await httpClient.SendAsync(request));
+                using var response = await lambdaRetry.Retry(async () =>
+                {
+                    using var request = CreateJenkinsRequest(uri.ToString());
+                    return await httpClient.SendAsync(request);
+                });
                 response.EnsureSuccessStatusCode();
                 json = await response.Content.ReadAsStringAsync();
                 var jenkinsObject = jenkinsDeserialiser.Deserialise(json);
@@ -95,7 +99,7 @@ namespace DiscordAssistant
                 }
                 if (shouldCache)
                 {
-                    await dataStore.Save(request.RequestUri.ToString(), jenkinsObject);
+                    await dataStore.Save(uri.ToString(), jenkinsObject);
                 }
             }
 
