@@ -39,8 +39,11 @@ namespace DiscordAssistant
 
         public async Task<Hudson> FetchWorkflows()
         {
-            using var request = CreateJenkinsRequest("https://jenkins.richteaman.com/api/json");
-            using var response = await httpClient.SendAsync(request);
+            var response = await lambdaRetry.Retry(async () =>
+            {
+                using var request = CreateJenkinsRequest("https://jenkins.richteaman.com/api/json");
+                return await httpClient.SendAsync(request);
+            });
 
             response.EnsureSuccessStatusCode();
 
