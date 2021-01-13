@@ -12,6 +12,11 @@ defaults:
   run:
     working-directory: DiscordAssistant
 
+env:
+  # this is needed for some reason - https://github.com/RichTeaMan/DiscordAssistant/runs/1694768464?check_suite_focus=true#step:6:9
+  ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+  IMAGE_NAME: discord-assistant
+
 jobs:
   build:
 
