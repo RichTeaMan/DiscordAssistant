@@ -45,6 +45,7 @@ jobs:
       with:
         fetch-depth: 0
     - name: Build image
+      working-directory: ./
       run: docker build --tag $IMAGE_NAME .
     - name: Log into GitHub Package Registry
       run: echo "${{ secrets.CR_PAT }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
