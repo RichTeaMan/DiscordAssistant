@@ -170,10 +170,6 @@ namespace DiscordAssistant
                     logger.LogWarning(ex, "Exception during status message.");
                 }
             }
-            else
-            {
-                await arg.Channel.SendMessageAsync("Test. Message received!");
-            }
         }
     }
 }
