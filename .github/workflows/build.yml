@@ -33,6 +33,12 @@ jobs:
     - name: Test
       run: dotnet test --no-restore --verbosity normal
 
+  publish:
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
     - name: Build image
       run: docker build --tag $IMAGE_NAME .
     - name: Log into GitHub Package Registry
